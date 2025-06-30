@@ -1,0 +1,61 @@
+@page "/fetchproducts"
+@using System.Text.Json
+@inject HttpClient Http
+
+<h3>Product List</h3>
+
+<ul>
+    @if (products != null)
+    {
+        foreach (var product in products)
+        {
+            <li>@product.Name - $@product.Price (@product.Category.Name)</li>
+        }
+    }
+    else
+    {
+        <li>Loading...</li>
+    }
+</ul>
+
+@code {
+    private Product[]? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/productlist");
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            products = JsonSerializer.Deserialize<Product[]>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch (JsonException jsonEx)
+        {
+            Console.WriteLine($"JSON Parse Error: {jsonEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"General Error: {ex.Message}");
+        }
+    }
+
+    public class Product
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public double Price { get; set; }
+        public int Stock { get; set; }
+        public Category Category { get; set; } = new Category();
+    }
+
+    public class Category
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+}
